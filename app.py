@@ -1,6 +1,8 @@
 import os
 from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
+
 
 load_dotenv()                   # Load gathers the value from dotenv file.
                                 # The key/values are now present as system environment
@@ -15,6 +17,10 @@ load_dotenv()                   # Load gathers the value from dotenv file.
 
 app = Flask(__name__)
 app.config.from_object(os.environ['APP_SETTINGS'])
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+from models import Result
 
 #app.config.from_object(os.environ["APP_SETTINGS"])ç
 print("OS environ after", os.environ['APP_SETTINGS'])
