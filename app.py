@@ -30,6 +30,7 @@ load_dotenv()                   # Load gathers the value from dotenv file.
 app = Flask(__name__)
 app.config.from_object(os.environ['APP_SETTINGS'])
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True     # Was set to False, but following tutorial states False
+#app.config.(os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'])
 db = SQLAlchemy(app)
 q = Queue(connection=conn)
 
@@ -121,5 +122,6 @@ def hello_name(name):
     return "Hello {}!".format(name)
 
 if __name__ == '__main__':
-    app.run()
+    print(os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'])
     print(os.environ['APP_SETTINGS'])
+    app.run()
