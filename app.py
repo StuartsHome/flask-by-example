@@ -6,6 +6,7 @@ import nltk
 # import requests library to send external HTTP GET requqests to grab the URL
 from flask import Flask, render_template, request, jsonify
 # Flask request object to handle GET and POST requests within the Flask app.
+import json
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from stop_words import stops
@@ -52,7 +53,8 @@ def count_and_save_words(url):
         return {"error": errors}
 
     # text processing
-    raw = BeautifulSoup(r.text).get_text()
+    raw = BeautifulSoup(r.text, features="html.parser").get_text()
+    # raw = BeautifulSoup(r.text).get_text()                            Original, added features parameter to stop warning in worker CLI
     nltk.data.path.append('./nltk_data/')  # set the path
     tokens = nltk.word_tokenize(raw)
     text = nltk.Text(tokens)
@@ -81,23 +83,28 @@ def count_and_save_words(url):
         return {"error": errors}
 
 
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    results = {}
-    if request.method == "POST":
-        # this import solves a rq bug which currently exists
-        from app import count_and_save_words
+    return render_template('index.html')
 
-        # get url that the person has entered
-        url = request.form['url']
-        if not url[:8].startswith(('https://', 'http://')):
-            url = 'http://' + url
-        job = q.enqueue_call(
-            func=count_and_save_words, args=(url,), result_ttl=5000
-        )
-        print(job.get_id())
+@app.route('/start', methods=['POST'])
+def get_counts():
+    # this import solves a rq bug which currently exists
+    from app import count_and_save_words
 
-    return render_template('index.html', results=results)
+    # get url
+    data = json.loads(request.data.decode())
+    url = data["url"]
+    if not url[:8].startswith(('https://', 'http://')):
+        url = 'http://' + url
+    # start job
+    job = q.enqueue_call(
+        func=count_and_save_words, args=(url,), result_ttl=5000
+    )
+    # return created job id
+    return job.get_id()
+    #return render_template('index.html', results=results)
 
 # This id is needed to see if the job is done processing
 # This is the route to handle that!
@@ -117,10 +124,14 @@ def get_results(job_key):
     else:
         return "Nay!", 202
 
+
+
+
+"""
 @app.route('/<name>')
 def hello_name(name):
     return "Hello {}!".format(name)
-
+"""
 if __name__ == '__main__':
     print(os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'])
     print(os.environ['APP_SETTINGS'])
